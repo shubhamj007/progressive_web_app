@@ -1,29 +1,71 @@
-import { Component, OnInit } from '@angular/core';
-import { ApiService } from './api.service';
-import { Item } from './api.service';
+import { Component, OnDestroy, OnInit } from "@angular/core";
+import { fromEvent, Observable, Subscription } from "rxjs";
+import { Item, ApiService } from "./api.service";
 
 @Component({
-  selector: 'app-root',
-  templateUrl: './app.component.html',
-  styleUrls: ['./app.component.css']
+  selector: "app-root",
+  templateUrl: "./app.component.html",
+  styleUrls: ["./app.component.css"],
 })
-export class AppComponent implements OnInit{
-  title = 'pwademo';
+export class AppComponent implements OnInit, OnDestroy {
+  onlineEvent: Observable<Event>;
+  offlineEvent: Observable<Event>;
+  subscriptions: Subscription[] = [];
+
+  connectionStatusMessage: string;
+  connectionStatus: string;
+
+  title = "pwademo";
   items: Array<Item>;
+  data: Array<Item>;
 
-  constructor(private apiService: ApiService){
+  constructor(private apiService: ApiService) {}
 
+  fetchData() {
+    this.apiService.fetch().subscribe(
+      (data: Array<Item>) => {
+        this.items = data;
+        console.log(this.items);
+      },
+      (err) => {
+        console.log(err);
+      }
+    );
   }
-  ngOnInit(){
+
+  refresh() {
     this.fetchData();
   }
-  fetchData(){
-    this.apiService.fetch().subscribe((data: Array<Item>)=>{
-      
-      this.items = data;
-      console.log(this.items);
-    }, (err)=>{
-      console.log(err);
-    });
+
+  ngOnInit(): void {
+    /**
+     * Get the online/offline status from browser window
+     */
+    this.onlineEvent = fromEvent(window, "online");
+    this.offlineEvent = fromEvent(window, "offline");
+
+    this.subscriptions.push(
+      this.onlineEvent.subscribe((e) => {
+        this.connectionStatusMessage = "Back to online";
+        this.connectionStatus = "online";
+        console.log("Online...");
+      })
+    );
+
+    this.subscriptions.push(
+      this.offlineEvent.subscribe((e) => {
+        this.connectionStatusMessage =
+          "Connection lost! You are not connected to internet";
+        this.connectionStatus = "offline";
+        console.log("Offline...");
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    /**
+     * Unsubscribe all subscriptions to avoid memory leak
+     */
+    this.subscriptions.forEach((subscription) => subscription.unsubscribe());
   }
 }
