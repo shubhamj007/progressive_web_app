@@ -15,7 +15,7 @@ app.use(function(req, res, next) {
   next()
 })
 
-var port = process.env.PORT || 3001
+var port = process.env.PORT || 3030
 
 app.listen(port, function() {
   console.log('App listening on port ' + port + '!')
